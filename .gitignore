@@ -1,0 +1,12 @@
+/target/
+.mongo/
+*.log
+
+.idea/
+*.iml
+.vscode/
+.settings/
+.classpath
+.project
+
+.env
