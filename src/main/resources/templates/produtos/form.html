@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Produto</title>
+</head>
+<body>
+
+<div th:fragment="content">
+
+    <div class="d-flex align-items-center gap-3 mb-4">
+        <a href="/produtos" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-arrow-left"></i>
+        </a>
+        <h2 class="fw-bold mb-0">
+            <span th:text="${produto.id != null} ? 'Editar Produto' : 'Novo Produto'"></span>
+        </h2>
+    </div>
+
+    <div class="card shadow-sm" style="max-width: 540px;">
+        <div class="card-body p-4">
+            <form th:action="@{/produtos/salvar}" th:object="${produto}" method="post">
+                <input type="hidden" th:field="*{id}"/>
+
+                <div class="mb-3">
+                    <label for="nome" class="form-label fw-medium">Nome</label>
+                    <input type="text" id="nome" class="form-control" th:field="*{nome}" required/>
+                </div>
+
+                <div class="mb-3">
+                    <label for="tipo" class="form-label fw-medium">Tipo</label>
+                    <select id="tipo" class="form-select" th:field="*{tipo}" required>
+                        <option value="">Selecione...</option>
+                        <option value="Pizza">Pizza</option>
+                        <option value="Lanche">Lanche</option>
+                        <option value="Bebida">Bebida</option>
+                        <option value="Porção">Porção</option>
+                        <option value="Adicional">Adicional</option>
+                    </select>
+                </div>
+
+                <div class="mb-3">
+                    <label for="preco" class="form-label fw-medium">Preço (R$)</label>
+                    <input type="number" id="preco" class="form-control" th:field="*{preco}" step="0.01" min="0" required/>
+                </div>
+
+                <div class="mb-3">
+                    <label for="quantidadeEstoque" class="form-label fw-medium">Quantidade em estoque</label>
+                    <input type="number" id="quantidadeEstoque" class="form-control" th:field="*{quantidadeEstoque}" min="0" step="1" required/>
+                </div>
+
+                <div class="form-check mb-4">
+                    <input type="checkbox" id="ativo" class="form-check-input" th:field="*{ativo}"/>
+                    <label for="ativo" class="form-check-label">Produto ativo</label>
+                </div>
+
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-check-lg me-1"></i> Salvar
+                    </button>
+                    <a href="/produtos" class="btn btn-outline-secondary">Cancelar</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+</div>
+
+</body>
+</html>
