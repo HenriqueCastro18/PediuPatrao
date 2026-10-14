@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Novo Pedido</title>
+</head>
+<body>
+
+<div th:fragment="content">
+
+    <div class="d-flex align-items-center gap-3 mb-4">
+        <a href="/pedidos" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-arrow-left"></i>
+        </a>
+        <h2 class="fw-bold mb-0">Novo Pedido</h2>
+    </div>
+
+    <div class="alert alert-danger alert-dismissible fade show" th:if="${erro}" role="alert" style="max-width: 860px;">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+        <span th:text="${erro}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+
+    <div class="card shadow-sm" style="max-width: 860px;">
+        <div class="card-body p-4">
+
+            <form th:action="@{/pedidos/salvar}" method="post" id="formPedido">
+
+                <div class="row g-3 mb-3">
+                    <div class="col-md-6">
+                        <label for="clienteId" class="form-label fw-medium">
+                            <i class="bi bi-person me-1"></i>Cliente
+                        </label>
+                        <select id="clienteId" name="clienteId" class="form-select" required>
+                            <option value="">Selecione...</option>
+                            <option th:each="c : ${clientes}" th:value="${c.id}" th:text="${c.nome}"></option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="formaPagamento" class="form-label fw-medium">
+                            <i class="bi bi-credit-card me-1"></i>Forma de pagamento
+                        </label>
+                        <select id="formaPagamento" name="formaPagamento" class="form-select" required>
+                            <option value="">Selecione...</option>
+                            <option th:each="f : ${formasPagamento}" th:value="${f.name()}" th:text="${f.descricao}"></option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="row g-3 mb-4" id="blocoDinheiro" hidden>
+                    <div class="col-md-6">
+                        <label for="valorRecebido" class="form-label fw-medium">
+                            <i class="bi bi-cash-coin me-1"></i>Valor recebido (R$)
+                        </label>
+                        <input type="number" step="0.01" min="0" id="valorRecebido" name="valorRecebido"
+                               class="form-control" placeholder="Ex.: 100,00"/>
+                    </div>
+                    <div class="col-md-6 d-flex align-items-end">
+                        <div class="fs-5">
+                            <span class="text-muted">Troco:</span>
+                            <strong id="trocoPedido" class="text-success">—</strong>
+                        </div>
+                    </div>
+                </div>
+
+                <p class="fw-medium mb-2"><i class="bi bi-box me-1"></i>Itens</p>
+                <div class="table-responsive">
+                    <table class="table align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Produto</th>
+                                <th>Tipo</th>
+                                <th class="text-end">Preço</th>
+                                <th class="text-center">Estoque</th>
+                                <th style="width:120px;">Quantidade</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:each="p : ${produtos}" th:attr="data-preco=${p.preco != null ? p.preco : 0}" data-linha-produto>
+                                <td th:text="${p.nome}"></td>
+                                <td th:text="${p.tipo}"></td>
+                                <td class="text-end" th:text="'R$ ' + ${#numbers.formatDecimal(p.preco, 1, 'POINT', 2, 'COMMA')}"></td>
+                                <td class="text-center">
+                                    <span class="badge"
+                                          th:classappend="${p.quantidadeEstoque != null and p.quantidadeEstoque > 0} ? 'bg-success' : 'bg-danger'"
+                                          th:text="${p.quantidadeEstoque != null ? p.quantidadeEstoque : 0}"></span>
+                                </td>
+                                <td>
+                                    <input type="hidden" name="produtoId" th:value="${p.id}"/>
+                                    <input type="number" name="quantidade" class="form-control form-control-sm"
+                                           value="0" min="0"
+                                           th:attr="max=${p.quantidadeEstoque != null ? p.quantidadeEstoque : 0}"/>
+                                </td>
+                            </tr>
+                            <tr th:if="${#lists.isEmpty(produtos)}">
+                                <td colspan="5" class="text-center text-muted py-4">Nenhum produto disponível.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="d-flex justify-content-end mt-3">
+                    <div class="text-end">
+                        <div class="text-muted small text-uppercase">Total do pedido</div>
+                        <div class="fs-4 fw-bold text-primary" id="totalPedido">R$ 0,00</div>
+                    </div>
+                </div>
+
+                <div class="d-flex gap-2 mt-4">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-check-lg me-1"></i> Registrar Pedido
+                    </button>
+                    <a href="/pedidos" class="btn btn-outline-secondary">Cancelar</a>
+                </div>
+
+            </form>
+        </div>
+    </div>
+
+    <script>
+        (function () {
+            var linhas = document.querySelectorAll('[data-linha-produto]');
+            var forma = document.getElementById('formaPagamento');
+            var bloco = document.getElementById('blocoDinheiro');
+            var recebido = document.getElementById('valorRecebido');
+            var totalEl = document.getElementById('totalPedido');
+            var trocoEl = document.getElementById('trocoPedido');
+
+            function reais(valor) {
+                return 'R$ ' + valor.toFixed(2).replace('.', ',');
+            }
+
+            function calcular() {
+                var total = 0;
+                linhas.forEach(function (tr) {
+                    var qtd = parseInt(tr.querySelector('input[name="quantidade"]').value, 10) || 0;
+                    var preco = parseFloat(tr.getAttribute('data-preco')) || 0;
+                    total += qtd * preco;
+                });
+                totalEl.textContent = reais(total);
+
+                var valor = parseFloat(recebido.value);
+                if (forma.value === 'DINHEIRO' && !isNaN(valor) && recebido.value !== '') {
+                    var troco = valor - total;
+                    trocoEl.textContent = troco >= 0 ? reais(troco) : 'Falta ' + reais(-troco);
+                    trocoEl.className = troco >= 0 ? 'text-success' : 'text-danger';
+                } else {
+                    trocoEl.textContent = '—';
+                    trocoEl.className = 'text-success';
+                }
+            }
+
+            function alternarDinheiro() {
+                bloco.hidden = forma.value !== 'DINHEIRO';
+                if (bloco.hidden) {
+                    recebido.value = '';
+                }
+                calcular();
+            }
+
+            forma.addEventListener('change', alternarDinheiro);
+            recebido.addEventListener('input', calcular);
+            linhas.forEach(function (tr) {
+                tr.querySelector('input[name="quantidade"]').addEventListener('input', calcular);
+            });
+            alternarDinheiro();
+        })();
+    </script>
+
+</div>
+
+</body>
+</html>
