@@ -80,6 +80,13 @@ RECEBIDO → EM PREPARAÇÃO → PRONTO → (ENTREGA)  SAIU PARA ENTREGA → FIN
 - **RF04 — Cancelamentos e descontos:** operações exclusivas do GERENTE; desconto percentual limitado a 20% e permitido apenas antes da saída; cancelamento com justificativa, histórico preservado e pedido congelado.
 - **RF05 — Auditoria:** coleção `auditorias` no MongoDB com usuário, perfil, data/hora, operação, entidade e identificador, campos alterados (valor anterior e novo) e justificativa. Audita inclusão de pedidos, mudança de status, desconto, cancelamento e alterações de clientes (logradouro e telefone). Os registros não têm rota de alteração ou exclusão e não armazenam senhas. Consulta restrita a ADMIN e GERENTE.
 
+## Dashboard Administrativo
+
+Painel em `/dashboard` (perfis ADMIN e GERENTE) que consome a API REST `/api/dashboard/*`:
+indicadores gerais, série de vendas por período, situação dos pedidos, produtos mais
+vendidos e filtros (período, situação, forma de pagamento). Detalhes, documentação dos
+endpoints e evidências em [`docs/dashboard-administrativo.md`](docs/dashboard-administrativo.md).
+
 ## Segurança de senha
 
 - **Alterar senha** (`/alterar-senha`): usuário autenticado troca a própria senha informando a senha atual.
@@ -108,4 +115,4 @@ Correções da avaliação da Parte 2 documentadas em [`docs/correcoes-parte2.md
 mvn test
 ```
 
-33 testes cobrindo: máquina de estados (`StatusPedido`) com fluxos de entrega e retirada; regras do `PedidoService` (cálculo no servidor, limite de desconto, bloqueio após o despacho, transições inválidas, congelamento após cancelamento); e administração de usuários (`UsuarioService`: duplicidade, perfil inválido, senha curta, proteção do último admin, troca/reset de senha).
+41 testes cobrindo: máquina de estados (`StatusPedido`) com fluxos de entrega e retirada; regras do `PedidoService` (cálculo no servidor, limite de desconto, bloqueio após o despacho, transições inválidas, congelamento após cancelamento); administração de usuários (`UsuarioService`: duplicidade, perfil inválido, senha curta, proteção do último admin, troca/reset de senha); e agregações do `DashboardService`.
