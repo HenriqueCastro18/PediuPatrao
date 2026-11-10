@@ -2,6 +2,12 @@
 
 Sistema de gestão para pizzaria com controle de acesso por perfil, gestão de pedidos com máquina de estados e auditoria persistente das operações.
 
+## 🎥 Vídeo de apresentação
+
+**[▶️ Assistir à apresentação do Dashboard Administrativo](https://github.com/HenriqueCastro18/PediuPatrao/releases/download/apresentacao-dashboard/Dashboard.mp4)**
+
+Também disponível na seção **[Releases](https://github.com/HenriqueCastro18/PediuPatrao/releases/tag/apresentacao-dashboard)** do repositório.
+
 ## Tecnologias
 
 - Java 21
