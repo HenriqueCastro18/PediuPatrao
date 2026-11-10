@@ -6,4 +6,10 @@ import java.util.Optional;
 
 public interface UsuarioRepository extends MongoRepository<Usuario, String> {
     Optional<Usuario> findByUsername(String username);
+
+    Optional<Usuario> findByEmailIgnoreCase(String email);
+
+    Optional<Usuario> findByResetToken(String resetToken);
+
+    long countByRole(String role);
 }

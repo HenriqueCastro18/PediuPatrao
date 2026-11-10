@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Dashboard</title>
+    <style>
+        .kpi-card { border: none; border-radius: .6rem; color: #fff; overflow: hidden; }
+        .kpi-card .kpi-icon { font-size: 2.4rem; opacity: .35; }
+        .kpi-card .kpi-value { font-size: 1.7rem; font-weight: 700; line-height: 1.1; }
+        .kpi-card .kpi-label { font-size: .8rem; text-transform: uppercase; letter-spacing: .03em; opacity: .9; }
+        .chart-box { position: relative; height: 320px; }
+        .chart-box-sm { position: relative; height: 300px; }
+        .dash-muted { color: #6c757d; }
+    </style>
+</head>
+<body>
+
+<div th:fragment="content">
+
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
+        <h2 class="fw-bold mb-0"><i class="bi bi-graph-up me-2 text-primary"></i>Dashboard Administrativo</h2>
+        <button type="button" class="btn btn-outline-primary" id="btnAtualizar">
+            <i class="bi bi-arrow-clockwise me-1"></i> Atualizar
+        </button>
+    </div>
+
+    <div class="alert alert-danger d-none" id="dashErro" role="alert"></div>
+
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+            <form id="filtros" class="row g-3 align-items-end">
+                <div class="col-sm-6 col-md-3 col-lg-2">
+                    <label for="fInicio" class="form-label fw-medium small">Início</label>
+                    <input type="date" class="form-control form-control-sm" id="fInicio" name="inicio">
+                </div>
+                <div class="col-sm-6 col-md-3 col-lg-2">
+                    <label for="fFim" class="form-label fw-medium small">Fim</label>
+                    <input type="date" class="form-control form-control-sm" id="fFim" name="fim">
+                </div>
+                <div class="col-sm-6 col-md-3 col-lg-2">
+                    <label for="fStatus" class="form-label fw-medium small">Situação</label>
+                    <select class="form-select form-select-sm" id="fStatus" name="status">
+                        <option value="">Todas</option>
+                    </select>
+                </div>
+                <div class="col-sm-6 col-md-3 col-lg-2">
+                    <label for="fForma" class="form-label fw-medium small">Pagamento</label>
+                    <select class="form-select form-select-sm" id="fForma" name="formaPagamento">
+                        <option value="">Todas</option>
+                    </select>
+                </div>
+                <div class="col-sm-6 col-md-3 col-lg-2">
+                    <label for="fAgrupamento" class="form-label fw-medium small">Agrupar por</label>
+                    <select class="form-select form-select-sm" id="fAgrupamento" name="agrupamento">
+                        <option value="dia">Dia</option>
+                        <option value="mes">Mês</option>
+                    </select>
+                </div>
+                <div class="col-sm-6 col-md-3 col-lg-2 d-flex gap-2">
+                    <button type="submit" class="btn btn-primary btn-sm w-100">
+                        <i class="bi bi-funnel me-1"></i> Aplicar
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary btn-sm" id="btnLimpar">Limpar</button>
+                </div>
+            </form>
+            <div class="small dash-muted mt-2" id="periodoInfo"></div>
+        </div>
+    </div>
+
+    <div class="row g-3 mb-2" id="kpis">
+        <div class="col-6 col-lg-3">
+            <div class="card kpi-card shadow-sm h-100" style="background:#2a78d6;">
+                <div class="card-body d-flex justify-content-between align-items-center">
+                    <div><div class="kpi-value" id="kpiFaturamento">—</div><div class="kpi-label">Faturamento</div></div>
+                    <i class="bi bi-cash-stack kpi-icon"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="card kpi-card shadow-sm h-100" style="background:#1baf7a;">
+                <div class="card-body d-flex justify-content-between align-items-center">
+                    <div><div class="kpi-value" id="kpiPedidos">—</div><div class="kpi-label">Pedidos válidos</div></div>
+                    <i class="bi bi-bag-check kpi-icon"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="card kpi-card shadow-sm h-100" style="background:#6250d6;">
+                <div class="card-body d-flex justify-content-between align-items-center">
+                    <div><div class="kpi-value" id="kpiTicket">—</div><div class="kpi-label">Ticket médio</div></div>
+                    <i class="bi bi-receipt kpi-icon"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="card kpi-card shadow-sm h-100" style="background:#eb6834;">
+                <div class="card-body d-flex justify-content-between align-items-center">
+                    <div><div class="kpi-value" id="kpiItens">—</div><div class="kpi-label">Itens vendidos</div></div>
+                    <i class="bi bi-box-seam kpi-icon"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-lg-3">
+            <div class="card shadow-sm h-100">
+                <div class="card-body text-center">
+                    <div class="fs-4 fw-bold text-danger" id="kpiCancelados">—</div>
+                    <div class="small dash-muted text-uppercase">Pedidos cancelados</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="card shadow-sm h-100">
+                <div class="card-body text-center">
+                    <div class="fs-4 fw-bold text-secondary" id="kpiDesconto">—</div>
+                    <div class="small dash-muted text-uppercase">Desconto concedido</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="card shadow-sm h-100">
+                <div class="card-body text-center">
+                    <div class="fs-4 fw-bold text-dark" id="kpiTotalPedidos">—</div>
+                    <div class="small dash-muted text-uppercase">Total de pedidos</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="card shadow-sm h-100">
+                <div class="card-body text-center">
+                    <div class="fs-4 fw-bold text-success" id="kpiFormaTop">—</div>
+                    <div class="small dash-muted text-uppercase">Pagamento mais usado</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-12 col-xl-8">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-white fw-semibold"><i class="bi bi-graph-up-arrow me-1 text-primary"></i>Vendas por período</div>
+                <div class="card-body">
+                    <div class="chart-box"><canvas id="chartVendas"></canvas></div>
+                    <div class="text-center dash-muted py-5 d-none" id="vendasVazio">Nenhuma venda no período selecionado.</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-12 col-xl-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-white fw-semibold"><i class="bi bi-pie-chart me-1 text-primary"></i>Situação dos pedidos</div>
+                <div class="card-body">
+                    <div class="chart-box-sm"><canvas id="chartStatus"></canvas></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-12 col-xl-7">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-white fw-semibold"><i class="bi bi-trophy me-1 text-primary"></i>Produtos mais vendidos</div>
+                <div class="card-body">
+                    <div class="chart-box-sm"><canvas id="chartProdutos"></canvas></div>
+                    <div class="text-center dash-muted py-5 d-none" id="produtosVazio">Nenhum produto vendido no período.</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-12 col-xl-5">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-white fw-semibold"><i class="bi bi-credit-card me-1 text-primary"></i>Formas de pagamento</div>
+                <div class="card-body">
+                    <div class="chart-box-sm"><canvas id="chartFormas"></canvas></div>
+                    <div class="text-center dash-muted py-5 d-none" id="formasVazio">Sem pagamentos no período.</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-white fw-semibold"><i class="bi bi-table me-1 text-primary"></i>Detalhamento por situação</div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="ps-4">Situação</th>
+                            <th class="text-end">Quantidade</th>
+                            <th class="text-end pe-4">Valor total</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabelaSituacao"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script th:src="@{/plugins/chart.js/Chart.min.js}"></script>
+    <script>
+        (function () {
+            const PALETTE = ['#2a78d6', '#eb6834', '#1baf7a', '#eda100', '#e87ba4', '#6250d6', '#008300', '#e34948'];
+            const STATUS_COR = {
+                RECEBIDO: '#6250d6', EM_PREPARACAO: '#eda100', PRONTO: '#2a78d6',
+                SAIU_PARA_ENTREGA: '#eb6834', RETIRADO: '#1baf7a', FINALIZADO: '#008300', CANCELADO: '#e34948'
+            };
+            const brl = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
+            const num = new Intl.NumberFormat('pt-BR');
+
+            const el = (id) => document.getElementById(id);
+            const charts = {};
+
+            function destruir(nome) {
+                if (charts[nome]) { charts[nome].destroy(); charts[nome] = null; }
+            }
+
+            function mostrarErro(msg) {
+                const box = el('dashErro');
+                box.textContent = msg;
+                box.classList.remove('d-none');
+            }
+
+            function limparErro() {
+                el('dashErro').classList.add('d-none');
+            }
+
+            function toggle(id, vazio) {
+                el(id).classList.toggle('d-none', !vazio);
+            }
+
+            async function carregarFiltros() {
+                try {
+                    const resp = await fetch('/api/dashboard/filtros', { headers: { 'Accept': 'application/json' } });
+                    if (!resp.ok) return;
+                    const dados = await resp.json();
+                    dados.status.forEach(o => el('fStatus').add(new Option(o.descricao, o.valor)));
+                    dados.formasPagamento.forEach(o => el('fForma').add(new Option(o.descricao, o.valor)));
+                } catch (e) { mostrarErro('Não foi possível carregar os filtros.'); }
+            }
+
+            function queryString() {
+                const p = new URLSearchParams();
+                const inicio = el('fInicio').value;
+                const fim = el('fFim').value;
+                const status = el('fStatus').value;
+                const forma = el('fForma').value;
+                const agr = el('fAgrupamento').value;
+                if (inicio) p.set('inicio', inicio);
+                if (fim) p.set('fim', fim);
+                if (status) p.set('status', status);
+                if (forma) p.set('formaPagamento', forma);
+                p.set('agrupamento', agr);
+                p.set('limiteProdutos', '8');
+                return p.toString();
+            }
+
+            async function carregar() {
+                limparErro();
+                try {
+                    const resp = await fetch('/api/dashboard/resumo?' + queryString(), { headers: { 'Accept': 'application/json' } });
+                    if (!resp.ok) {
+                        const err = await resp.json().catch(() => ({}));
+                        mostrarErro(err.mensagem || ('Erro ao carregar dados (HTTP ' + resp.status + ').'));
+                        return;
+                    }
+                    const dados = await resp.json();
+                    renderIndicadores(dados.indicadores);
+                    renderVendas(dados.vendasPorPeriodo);
+                    renderStatus(dados.situacaoPedidos);
+                    renderProdutos(dados.produtosMaisVendidos);
+                    renderFormas(dados.formasPagamento);
+                    renderTabela(dados.situacaoPedidos);
+                } catch (e) {
+                    mostrarErro('Falha de comunicação com a API.');
+                }
+            }
+
+            function renderIndicadores(ind) {
+                el('kpiFaturamento').textContent = brl.format(ind.faturamentoTotal);
+                el('kpiPedidos').textContent = num.format(ind.pedidosValidos);
+                el('kpiTicket').textContent = brl.format(ind.ticketMedio);
+                el('kpiItens').textContent = num.format(ind.itensVendidos);
+                el('kpiCancelados').textContent = num.format(ind.pedidosCancelados);
+                el('kpiDesconto').textContent = brl.format(ind.descontoConcedido);
+                el('kpiTotalPedidos').textContent = num.format(ind.totalPedidos);
+                el('periodoInfo').textContent = 'Período analisado: ' + ind.periodoInicio + ' a ' + ind.periodoFim;
+            }
+
+            function renderVendas(pontos) {
+                destruir('vendas');
+                const vazio = !pontos || pontos.length === 0;
+                toggle('vendasVazio', vazio);
+                el('chartVendas').style.display = vazio ? 'none' : 'block';
+                if (vazio) return;
+                const pedidos = pontos.map(p => p.pedidos);
+                charts.vendas = new Chart(el('chartVendas').getContext('2d'), {
+                    type: 'line',
+                    data: {
+                        labels: pontos.map(p => p.rotulo),
+                        datasets: [{
+                            label: 'Faturamento',
+                            data: pontos.map(p => p.faturamento),
+                            borderColor: '#2a78d6',
+                            backgroundColor: 'rgba(42,120,214,0.12)',
+                            borderWidth: 2,
+                            pointRadius: 3,
+                            pointBackgroundColor: '#2a78d6',
+                            fill: true,
+                            lineTension: 0.2
+                        }]
+                    },
+                    options: {
+                        responsive: true, maintainAspectRatio: false,
+                        legend: { display: false },
+                        tooltips: {
+                            callbacks: {
+                                label: (item) => 'Faturamento: ' + brl.format(item.yLabel),
+                                afterLabel: (item, data) => 'Pedidos: ' + num.format(pedidos[item.index])
+                            }
+                        },
+                        scales: {
+                            yAxes: [{ ticks: { beginAtZero: true, callback: (v) => brl.format(v) } }],
+                            xAxes: [{ gridLines: { display: false } }]
+                        }
+                    }
+                });
+            }
+
+            function renderStatus(situacoes) {
+                destruir('status');
+                const ativos = (situacoes || []).filter(s => s.quantidade > 0);
+                if (ativos.length === 0) {
+                    el('chartStatus').style.display = 'none';
+                    return;
+                }
+                el('chartStatus').style.display = 'block';
+                charts.status = new Chart(el('chartStatus').getContext('2d'), {
+                    type: 'doughnut',
+                    data: {
+                        labels: ativos.map(s => s.descricao),
+                        datasets: [{
+                            data: ativos.map(s => s.quantidade),
+                            backgroundColor: ativos.map(s => STATUS_COR[s.status] || '#6c757d'),
+                            borderColor: '#ffffff',
+                            borderWidth: 2
+                        }]
+                    },
+                    options: {
+                        responsive: true, maintainAspectRatio: false,
+                        legend: { position: 'bottom' },
+                        tooltips: { callbacks: { label: (item, data) => {
+                            const label = data.labels[item.index];
+                            const valor = data.datasets[0].data[item.index];
+                            return label + ': ' + num.format(valor);
+                        } } }
+                    }
+                });
+            }
+
+            function renderProdutos(produtos) {
+                destruir('produtos');
+                const vazio = !produtos || produtos.length === 0;
+                toggle('produtosVazio', vazio);
+                el('chartProdutos').style.display = vazio ? 'none' : 'block';
+                if (vazio) return;
+                charts.produtos = new Chart(el('chartProdutos').getContext('2d'), {
+                    type: 'horizontalBar',
+                    data: {
+                        labels: produtos.map(p => p.nome),
+                        datasets: [{
+                            label: 'Quantidade vendida',
+                            data: produtos.map(p => p.quantidade),
+                            backgroundColor: '#2a78d6',
+                            borderWidth: 0
+                        }]
+                    },
+                    options: {
+                        responsive: true, maintainAspectRatio: false,
+                        legend: { display: false },
+                        tooltips: { callbacks: {
+                            label: (item, data) => {
+                                const p = produtos[item.index];
+                                return num.format(p.quantidade) + ' un · ' + brl.format(p.faturamento);
+                            }
+                        } },
+                        scales: { xAxes: [{ ticks: { beginAtZero: true, precision: 0 } }] }
+                    }
+                });
+            }
+
+            function renderFormas(formas) {
+                destruir('formas');
+                const vazio = !formas || formas.length === 0;
+                toggle('formasVazio', vazio);
+                el('chartFormas').style.display = vazio ? 'none' : 'block';
+                if (vazio) {
+                    el('kpiFormaTop').textContent = '—';
+                    return;
+                }
+                let top = formas[0];
+                formas.forEach(f => { if (f.valor > top.valor) top = f; });
+                el('kpiFormaTop').textContent = top.descricao;
+                charts.formas = new Chart(el('chartFormas').getContext('2d'), {
+                    type: 'doughnut',
+                    data: {
+                        labels: formas.map(f => f.descricao),
+                        datasets: [{
+                            data: formas.map(f => f.valor),
+                            backgroundColor: formas.map((f, i) => PALETTE[i % PALETTE.length]),
+                            borderColor: '#ffffff',
+                            borderWidth: 2
+                        }]
+                    },
+                    options: {
+                        responsive: true, maintainAspectRatio: false,
+                        legend: { position: 'bottom' },
+                        tooltips: { callbacks: { label: (item, data) => {
+                            const label = data.labels[item.index];
+                            const valor = data.datasets[0].data[item.index];
+                            return label + ': ' + brl.format(valor);
+                        } } }
+                    }
+                });
+            }
+
+            function renderTabela(situacoes) {
+                const corpo = el('tabelaSituacao');
+                corpo.innerHTML = '';
+                (situacoes || []).forEach(s => {
+                    const tr = document.createElement('tr');
+                    const cor = STATUS_COR[s.status] || '#6c757d';
+                    tr.innerHTML =
+                        '<td class="ps-4"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:' + cor + '" class="me-2"></span>' + s.descricao + '</td>' +
+                        '<td class="text-end">' + num.format(s.quantidade) + '</td>' +
+                        '<td class="text-end pe-4">' + brl.format(s.valorTotal) + '</td>';
+                    corpo.appendChild(tr);
+                });
+            }
+
+            el('filtros').addEventListener('submit', (e) => { e.preventDefault(); carregar(); });
+            el('btnAtualizar').addEventListener('click', carregar);
+            el('btnLimpar').addEventListener('click', () => {
+                el('fInicio').value = ''; el('fFim').value = '';
+                el('fStatus').value = ''; el('fForma').value = '';
+                el('fAgrupamento').value = 'dia';
+                carregar();
+            });
+
+            carregarFiltros().then(carregar);
+        })();
+    </script>
+
+</div>
+
+</body>
+</html>

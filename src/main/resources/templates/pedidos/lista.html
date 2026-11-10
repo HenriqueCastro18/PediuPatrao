@@ -55,7 +55,7 @@
                                   th:classappend="${pedido.status.name() == 'FINALIZADO'} ? 'bg-success' :
                                                   (${pedido.status.name() == 'CANCELADO'} ? 'bg-danger' :
                                                   (${pedido.status.name() == 'EM_PREPARACAO'} ? 'bg-warning text-dark' :
-                                                  (${pedido.status.name() == 'SAIU_PARA_ENTREGA_RETIRADO'} ? 'bg-info text-dark' : 'bg-secondary')))"
+                                                  (${pedido.status.despachado()} ? 'bg-info text-dark' : 'bg-secondary')))"
                                   th:text="${pedido.status.descricao}"></span>
                         </td>
                         <td class="text-end" th:text="'R$ ' + ${#numbers.formatDecimal(pedido.valorTotal, 1, 'POINT', 2, 'COMMA')}"></td>
