@@ -3,6 +3,7 @@ package com.umc.pediupatrao.controller;
 import com.umc.pediupatrao.entity.FormaPagamento;
 import com.umc.pediupatrao.entity.Pedido;
 import com.umc.pediupatrao.entity.StatusPedido;
+import com.umc.pediupatrao.entity.TipoEntrega;
 import com.umc.pediupatrao.service.ClienteService;
 import com.umc.pediupatrao.service.PedidoService;
 import com.umc.pediupatrao.service.ProdutoService;
@@ -43,6 +44,7 @@ public class PedidoWebController {
         model.addAttribute("clientes", clienteService.listarClientes());
         model.addAttribute("produtos", produtoService.listarAtivos());
         model.addAttribute("formasPagamento", FormaPagamento.values());
+        model.addAttribute("tiposEntrega", TipoEntrega.values());
         model.addAttribute("content", "pedidos/form :: content");
         return "layout";
     }
@@ -53,8 +55,9 @@ public class PedidoWebController {
                          @RequestParam(required = false) List<Integer> quantidade,
                          @RequestParam(required = false) String formaPagamento,
                          @RequestParam(required = false) Double valorRecebido,
+                         @RequestParam(required = false) String tipoEntrega,
                          RedirectAttributes redirect) {
-        Pedido pedido = pedidoService.criar(clienteId, produtoId, quantidade, formaPagamento, valorRecebido);
+        Pedido pedido = pedidoService.criar(clienteId, produtoId, quantidade, formaPagamento, valorRecebido, tipoEntrega);
         redirect.addFlashAttribute("sucesso", "Pedido registrado com sucesso!");
         return "redirect:/pedidos/" + pedido.getId();
     }
@@ -63,7 +66,7 @@ public class PedidoWebController {
     public String detalhe(@PathVariable String id, Model model) {
         Pedido pedido = pedidoService.buscarPorId(id);
         model.addAttribute("pedido", pedido);
-        model.addAttribute("proximos", pedido.getStatus().proximosPermitidos());
+        model.addAttribute("proximos", pedido.getStatus().proximosPermitidos(pedido.getTipoEntrega()));
         model.addAttribute("content", "pedidos/detalhe :: content");
         return "layout";
     }

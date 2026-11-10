@@ -38,6 +38,17 @@
                 </div>
 
                 <div class="mb-3">
+                    <label for="email" class="form-label fw-medium">
+                        <i class="bi bi-envelope me-1"></i>E-mail
+                    </label>
+                    <input type="email"
+                           id="email"
+                           class="form-control"
+                           th:field="*{email}"
+                           placeholder="usuario@email.com"/>
+                </div>
+
+                <div class="mb-3">
                     <label for="password" class="form-label fw-medium">
                         <i class="bi bi-lock me-1"></i>Senha
                         <small class="text-muted fw-normal" th:if="${usuario.id != null}">

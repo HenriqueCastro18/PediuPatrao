@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 @Controller
 public class HomeController {
@@ -49,25 +50,53 @@ public class HomeController {
     }
 
     @PostMapping("/esqueci-senha")
-    public String redefinirSenha(@RequestParam String username,
-            @RequestParam String senha,
+    public String solicitarReset(@RequestParam String email, Model model) {
+        String baseUrl = ServletUriComponentsBuilder.fromCurrentContextPath().build().toUriString();
+        usuarioService.solicitarResetSenha(email, baseUrl);
+        model.addAttribute("mensagem",
+                "Se o e-mail estiver cadastrado, enviamos um link para redefinição de senha.");
+        return "esqueci-senha";
+    }
+
+    @GetMapping("/redefinir-senha")
+    public String redefinirSenhaForm(@RequestParam(required = false) String token, Model model) {
+        if (!usuarioService.tokenResetValido(token)) {
+            model.addAttribute("erro", "Link de redefinição inválido ou expirado. Solicite um novo.");
+            return "esqueci-senha";
+        }
+        model.addAttribute("token", token);
+        return "redefinir-senha";
+    }
+
+    @PostMapping("/redefinir-senha")
+    public String redefinirSenha(@RequestParam String token,
+            @RequestParam String novaSenha,
             @RequestParam String confirmaSenha,
             Model model) {
-        if (senha == null || senha.length() < 4) {
-            model.addAttribute("erro", "A senha deve ter ao menos 4 caracteres.");
-            model.addAttribute("username", username);
-            return "esqueci-senha";
-        }
-        if (!senha.equals(confirmaSenha)) {
-            model.addAttribute("erro", "As senhas não coincidem.");
-            model.addAttribute("username", username);
-            return "esqueci-senha";
-        }
-        if (!usuarioService.redefinirSenha(username, senha)) {
-            model.addAttribute("erro", "Usuário não encontrado.");
-            return "esqueci-senha";
+        try {
+            usuarioService.redefinirSenhaComToken(token, novaSenha, confirmaSenha);
+        } catch (RuntimeException ex) {
+            model.addAttribute("erro", ex.getMessage());
+            model.addAttribute("token", token);
+            return "redefinir-senha";
         }
         return "redirect:/login?reset";
+    }
+
+    @GetMapping("/alterar-senha")
+    public String alterarSenhaForm(Model model) {
+        model.addAttribute("content", "alterar-senha :: content");
+        return "layout";
+    }
+
+    @PostMapping("/alterar-senha")
+    public String alterarSenha(@RequestParam String senhaAtual,
+            @RequestParam String novaSenha,
+            @RequestParam String confirmaSenha,
+            RedirectAttributes redirectAttributes) {
+        usuarioService.alterarPropriaSenha(senhaAtual, novaSenha, confirmaSenha);
+        redirectAttributes.addFlashAttribute("sucesso", "Senha alterada com sucesso!");
+        return "redirect:/alterar-senha";
     }
 
     @RequestMapping("/acesso-negado")

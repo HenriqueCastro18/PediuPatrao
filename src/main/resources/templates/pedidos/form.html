@@ -26,7 +26,7 @@
             <form th:action="@{/pedidos/salvar}" method="post" id="formPedido">
 
                 <div class="row g-3 mb-3">
-                    <div class="col-md-6">
+                    <div class="col-md-4">
                         <label for="clienteId" class="form-label fw-medium">
                             <i class="bi bi-person me-1"></i>Cliente
                         </label>
@@ -35,7 +35,16 @@
                             <option th:each="c : ${clientes}" th:value="${c.id}" th:text="${c.nome}"></option>
                         </select>
                     </div>
-                    <div class="col-md-6">
+                    <div class="col-md-4">
+                        <label for="tipoEntrega" class="form-label fw-medium">
+                            <i class="bi bi-truck me-1"></i>Tipo de entrega
+                        </label>
+                        <select id="tipoEntrega" name="tipoEntrega" class="form-select" required>
+                            <option value="">Selecione...</option>
+                            <option th:each="t : ${tiposEntrega}" th:value="${t.name()}" th:text="${t.descricao}"></option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
                         <label for="formaPagamento" class="form-label fw-medium">
                             <i class="bi bi-credit-card me-1"></i>Forma de pagamento
                         </label>

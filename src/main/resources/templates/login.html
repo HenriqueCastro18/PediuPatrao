@@ -35,6 +35,7 @@
             <h3 class="mb-4">Bem-vindo</h3>
 
             <div class="alert alert-success" th:if="${param.reset}">Senha redefinida com sucesso. Faça o login.</div>
+            <div class="alert alert-success" th:if="${param.logout}">Sessão encerrada. Faça o login.</div>
             <div class="alert alert-danger" th:if="${param.error}">Usuário ou senha inválidos.</div>
 
             <form th:action="@{/login}" method="post">

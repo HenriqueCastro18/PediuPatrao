@@ -62,12 +62,14 @@ Acesse `http://localhost:8080`. Na primeira execução são criados três usuár
 ## Fluxo de status do pedido
 
 ```
-RECEBIDO → EM PREPARAÇÃO → PRONTO → SAIU PARA ENTREGA / RETIRADO → FINALIZADO
+RECEBIDO → EM PREPARAÇÃO → PRONTO → (ENTREGA)  SAIU PARA ENTREGA → FINALIZADO
+                                  → (RETIRADA) RETIRADO          → FINALIZADO
 ```
 
+- Cada pedido define o **tipo de entrega** (`ENTREGA` ou `RETIRADA`) no cadastro.
 - A data/hora de entrada e o responsável pelo registro são gravados em `RECEBIDO`.
-- A data/hora e o responsável pela saída são gravados em `SAIU PARA ENTREGA / RETIRADO`.
-- Transições fora dessa sequência são rejeitadas.
+- A data/hora e o responsável pelo despacho são gravados em `SAIU PARA ENTREGA` (entrega) ou `RETIRADO` (retirada).
+- A partir de `PRONTO` o fluxo diverge conforme o tipo de entrega; transições fora da sequência são rejeitadas.
 - `CANCELADO` é um estado excepcional do GERENTE, permitido apenas antes da saída e mediante justificativa. Após o cancelamento o pedido é congelado.
 
 ## Requisitos implementados
@@ -78,10 +80,18 @@ RECEBIDO → EM PREPARAÇÃO → PRONTO → SAIU PARA ENTREGA / RETIRADO → FIN
 - **RF04 — Cancelamentos e descontos:** operações exclusivas do GERENTE; desconto percentual limitado a 20% e permitido apenas antes da saída; cancelamento com justificativa, histórico preservado e pedido congelado.
 - **RF05 — Auditoria:** coleção `auditorias` no MongoDB com usuário, perfil, data/hora, operação, entidade e identificador, campos alterados (valor anterior e novo) e justificativa. Audita inclusão de pedidos, mudança de status, desconto, cancelamento e alterações de clientes (logradouro e telefone). Os registros não têm rota de alteração ou exclusão e não armazenam senhas. Consulta restrita a ADMIN e GERENTE.
 
+## Segurança de senha
+
+- **Alterar senha** (`/alterar-senha`): usuário autenticado troca a própria senha informando a senha atual.
+- **Esqueci minha senha** (`/esqueci-senha`): envio de link de redefinição por e-mail, com token de uso único e validade. Configure o SMTP pelas variáveis `MAIL_HOST`, `MAIL_PORT`, `MAIL_USERNAME`, `MAIL_PASSWORD` e `MAIL_FROM` (ver `.env.example`). Sem SMTP configurado, o link é registrado no log para teste.
+
+Correções da avaliação da Parte 2 documentadas em [`docs/correcoes-parte2.md`](docs/correcoes-parte2.md).
+
 ## Funcionalidades adicionais
 
 - **Controle de estoque:** cada produto possui quantidade em estoque. O estoque é baixado ao registrar o pedido (com bloqueio quando insuficiente) e devolvido no cancelamento.
 - **Forma de pagamento:** o pedido registra a forma de pagamento (dinheiro, Pix, cartão). Para dinheiro, o atendente informa o valor recebido e o sistema calcula o troco no servidor, bloqueando valores menores que o total.
+- **Tipo de entrega:** cada pedido é de entrega ou retirada, com estados de despacho distintos.
 
 ## Principais alterações em relação ao projeto base
 
@@ -98,4 +108,4 @@ RECEBIDO → EM PREPARAÇÃO → PRONTO → SAIU PARA ENTREGA / RETIRADO → FIN
 mvn test
 ```
 
-Cobrem a máquina de estados e as regras do `PedidoService` (cálculo no servidor, limite de desconto, bloqueio após a saída, transições inválidas e congelamento após o cancelamento).
+33 testes cobrindo: máquina de estados (`StatusPedido`) com fluxos de entrega e retirada; regras do `PedidoService` (cálculo no servidor, limite de desconto, bloqueio após o despacho, transições inválidas, congelamento após cancelamento); e administração de usuários (`UsuarioService`: duplicidade, perfil inválido, senha curta, proteção do último admin, troca/reset de senha).

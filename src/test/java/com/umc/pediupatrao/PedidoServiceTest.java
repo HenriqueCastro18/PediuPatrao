@@ -6,6 +6,7 @@ import com.umc.pediupatrao.entity.ItemPedido;
 import com.umc.pediupatrao.entity.Pedido;
 import com.umc.pediupatrao.entity.Produto;
 import com.umc.pediupatrao.entity.StatusPedido;
+import com.umc.pediupatrao.entity.TipoEntrega;
 import com.umc.pediupatrao.repository.ClienteRepository;
 import com.umc.pediupatrao.repository.PedidoRepository;
 import com.umc.pediupatrao.repository.ProdutoRepository;
@@ -65,6 +66,10 @@ class PedidoServiceTest {
     }
 
     private Pedido pedidoEm(StatusPedido status) {
+        return pedidoEm(status, TipoEntrega.ENTREGA);
+    }
+
+    private Pedido pedidoEm(StatusPedido status, TipoEntrega tipo) {
         Pedido pedido = new Pedido();
         pedido.setId("x1");
         pedido.getItens().add(new ItemPedido("p1", "Pizza", 2, 50.0));
@@ -72,6 +77,7 @@ class PedidoServiceTest {
         pedido.setValorBruto(100.0);
         pedido.setValorTotal(100.0);
         pedido.setStatus(status);
+        pedido.setTipoEntrega(tipo);
         return pedido;
     }
 
@@ -88,7 +94,7 @@ class PedidoServiceTest {
         Produto pizza = pizza(10);
         when(produtoRepository.findById("p1")).thenReturn(Optional.of(pizza));
 
-        Pedido pedido = pedidoService.criar("c1", List.of("p1"), List.of(3), "PIX", null);
+        Pedido pedido = pedidoService.criar("c1", List.of("p1"), List.of(3), "PIX", null, "ENTREGA");
 
         assertEquals(150.0, pedido.getValorTotal());
         assertEquals(StatusPedido.RECEBIDO, pedido.getStatus());
@@ -102,7 +108,7 @@ class PedidoServiceTest {
         clienteExistente();
         when(produtoRepository.findById("p1")).thenReturn(Optional.of(pizza(10)));
 
-        Pedido pedido = pedidoService.criar("c1", List.of("p1"), List.of(3), "DINHEIRO", 200.0);
+        Pedido pedido = pedidoService.criar("c1", List.of("p1"), List.of(3), "DINHEIRO", 200.0, "RETIRADA");
 
         assertEquals(200.0, pedido.getValorRecebido());
         assertEquals(50.0, pedido.getTroco());
@@ -114,7 +120,7 @@ class PedidoServiceTest {
         when(produtoRepository.findById("p1")).thenReturn(Optional.of(pizza(10)));
 
         assertThrows(IllegalArgumentException.class,
-                () -> pedidoService.criar("c1", List.of("p1"), List.of(3), "DINHEIRO", 100.0));
+                () -> pedidoService.criar("c1", List.of("p1"), List.of(3), "DINHEIRO", 100.0, "ENTREGA"));
         verify(pedidoRepository, never()).save(any());
     }
 
@@ -124,14 +130,14 @@ class PedidoServiceTest {
         when(produtoRepository.findById("p1")).thenReturn(Optional.of(pizza(10)));
 
         assertThrows(IllegalArgumentException.class,
-                () -> pedidoService.criar("c1", List.of("p1"), List.of(3), "DINHEIRO", null));
+                () -> pedidoService.criar("c1", List.of("p1"), List.of(3), "DINHEIRO", null, "ENTREGA"));
     }
 
     @Test
     void formaPagamentoObrigatoria() {
         clienteExistente();
         assertThrows(IllegalArgumentException.class,
-                () -> pedidoService.criar("c1", List.of("p1"), List.of(3), "", null));
+                () -> pedidoService.criar("c1", List.of("p1"), List.of(3), "", null, "ENTREGA"));
     }
 
     @Test
@@ -140,7 +146,7 @@ class PedidoServiceTest {
         when(produtoRepository.findById("p1")).thenReturn(Optional.of(pizza(2)));
 
         assertThrows(IllegalStateException.class,
-                () -> pedidoService.criar("c1", List.of("p1"), List.of(3), "PIX", null));
+                () -> pedidoService.criar("c1", List.of("p1"), List.of(3), "PIX", null, "ENTREGA"));
         verify(pedidoRepository, never()).save(any());
     }
 
@@ -172,7 +178,7 @@ class PedidoServiceTest {
 
     @Test
     void descontoAposSaidaBloqueado() {
-        when(pedidoRepository.findById("x1")).thenReturn(Optional.of(pedidoEm(StatusPedido.SAIU_PARA_ENTREGA_RETIRADO)));
+        when(pedidoRepository.findById("x1")).thenReturn(Optional.of(pedidoEm(StatusPedido.SAIU_PARA_ENTREGA)));
         assertThrows(IllegalStateException.class, () -> pedidoService.aplicarDesconto("x1", 10.0));
     }
 
@@ -185,14 +191,14 @@ class PedidoServiceTest {
     @Test
     void saidaRegistraResponsavel() {
         when(pedidoRepository.findById("x1")).thenReturn(Optional.of(pedidoEm(StatusPedido.PRONTO)));
-        Pedido pedido = pedidoService.avancarStatus("x1", StatusPedido.SAIU_PARA_ENTREGA_RETIRADO);
-        assertEquals(StatusPedido.SAIU_PARA_ENTREGA_RETIRADO, pedido.getStatus());
+        Pedido pedido = pedidoService.avancarStatus("x1", StatusPedido.SAIU_PARA_ENTREGA);
+        assertEquals(StatusPedido.SAIU_PARA_ENTREGA, pedido.getStatus());
         assertEquals("sistema", pedido.getUsuarioSaida());
     }
 
     @Test
     void cancelamentoAposSaidaBloqueado() {
-        when(pedidoRepository.findById("x1")).thenReturn(Optional.of(pedidoEm(StatusPedido.SAIU_PARA_ENTREGA_RETIRADO)));
+        when(pedidoRepository.findById("x1")).thenReturn(Optional.of(pedidoEm(StatusPedido.SAIU_PARA_ENTREGA)));
         assertThrows(IllegalStateException.class, () -> pedidoService.cancelar("x1", "qualquer"));
     }
 

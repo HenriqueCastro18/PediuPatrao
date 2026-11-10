@@ -19,9 +19,9 @@ public class DataInitializer {
         return args -> {
             BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
 
-            criarUsuario(usuarioRepo, encoder, "admin", "teste123", "ADMIN");
-            criarUsuario(usuarioRepo, encoder, "gerente", "gerente123", "GERENTE");
-            criarUsuario(usuarioRepo, encoder, "atendente", "atendente123", "ATENDENTE");
+            criarUsuario(usuarioRepo, encoder, "admin", "admin@pediupatrao.com", "teste123", "ADMIN");
+            criarUsuario(usuarioRepo, encoder, "gerente", "gerente@pediupatrao.com", "gerente123", "GERENTE");
+            criarUsuario(usuarioRepo, encoder, "atendente", "atendente@pediupatrao.com", "atendente123", "ATENDENTE");
 
             if (produtoRepo.count() == 0) {
                 produtoRepo.saveAll(List.of(
@@ -43,15 +43,24 @@ public class DataInitializer {
     }
 
     private void criarUsuario(UsuarioRepository repo, BCryptPasswordEncoder encoder,
-                              String username, String senha, String role) {
+                              String username, String email, String senha, String role) {
         repo.findByUsername(username).ifPresentOrElse(existente -> {
+            boolean alterado = false;
             if (existente.getRole() == null || existente.getRole().isBlank()) {
                 existente.setRole(role);
+                alterado = true;
+            }
+            if (existente.getEmail() == null || existente.getEmail().isBlank()) {
+                existente.setEmail(email);
+                alterado = true;
+            }
+            if (alterado) {
                 repo.save(existente);
             }
         }, () -> {
             Usuario usuario = new Usuario();
             usuario.setUsername(username);
+            usuario.setEmail(email);
             usuario.setPassword(encoder.encode(senha));
             usuario.setRole(role);
             repo.save(usuario);

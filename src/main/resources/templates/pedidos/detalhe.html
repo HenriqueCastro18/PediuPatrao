@@ -17,8 +17,10 @@
               th:classappend="${pedido.status.name() == 'FINALIZADO'} ? 'bg-success' :
                               (${pedido.status.name() == 'CANCELADO'} ? 'bg-danger' :
                               (${pedido.status.name() == 'EM_PREPARACAO'} ? 'bg-warning text-dark' :
-                              (${pedido.status.name() == 'SAIU_PARA_ENTREGA_RETIRADO'} ? 'bg-info text-dark' : 'bg-secondary')))"
+                              (${pedido.status.despachado()} ? 'bg-info text-dark' : 'bg-secondary')))"
               th:text="${pedido.status.descricao}"></span>
+        <span class="badge bg-light text-dark border" th:if="${pedido.tipoEntrega != null}"
+              th:text="${pedido.tipoEntrega.descricao}"></span>
     </div>
 
     <div class="alert alert-success alert-dismissible fade show" th:if="${sucesso}" role="alert">
@@ -44,6 +46,10 @@
                 <div class="col-md-4">
                     <div class="text-muted small text-uppercase">Entrada</div>
                     <div class="fw-medium" th:text="${pedido.dataHoraEntrada != null} ? ${#temporals.format(pedido.dataHoraEntrada, 'dd/MM/yyyy HH:mm')} : '-'"></div>
+                </div>
+                <div class="col-md-4" th:if="${pedido.tipoEntrega != null}">
+                    <div class="text-muted small text-uppercase">Tipo de entrega</div>
+                    <div class="fw-medium" th:text="${pedido.tipoEntrega.descricao}"></div>
                 </div>
                 <div class="col-md-4" th:if="${pedido.formaPagamento != null}">
                     <div class="text-muted small text-uppercase">Forma de pagamento</div>
@@ -136,7 +142,7 @@
                 </div>
             </div>
 
-            <div sec:authorize="hasRole('GERENTE')" th:if="${pedido.status.anteriorASaida()}" class="mb-4">
+            <div sec:authorize="hasRole('GERENTE')" th:if="${pedido.status.anteriorAoDespacho()}" class="mb-4">
                 <label class="form-label fw-medium">Aplicar desconto <span class="text-muted">(máximo 20%)</span></label>
                 <form th:action="@{/pedidos/{id}/desconto(id=${pedido.id})}" method="post" class="d-flex gap-2" style="max-width:280px;">
                     <input type="number" name="percentual" step="0.01" min="0" max="20" class="form-control form-control-sm" placeholder="%" required/>
@@ -144,7 +150,7 @@
                 </form>
             </div>
 
-            <div sec:authorize="hasRole('GERENTE')" th:if="${pedido.status.anteriorASaida()}">
+            <div sec:authorize="hasRole('GERENTE')" th:if="${pedido.status.anteriorAoDespacho()}">
                 <label class="form-label fw-medium">Cancelar pedido</label>
                 <form th:action="@{/pedidos/{id}/cancelar(id=${pedido.id})}" method="post" style="max-width:520px;">
                     <textarea name="justificativa" class="form-control mb-2" rows="2" placeholder="Justificativa do cancelamento" required></textarea>

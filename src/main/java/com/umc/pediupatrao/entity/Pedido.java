@@ -24,6 +24,7 @@ public class Pedido {
     private double valorTotal;
 
     private StatusPedido status;
+    private TipoEntrega tipoEntrega;
 
     private FormaPagamento formaPagamento;
     private double valorRecebido;
@@ -133,6 +134,14 @@ public class Pedido {
 
     public void setStatus(StatusPedido status) {
         this.status = status;
+    }
+
+    public TipoEntrega getTipoEntrega() {
+        return tipoEntrega;
+    }
+
+    public void setTipoEntrega(TipoEntrega tipoEntrega) {
+        this.tipoEntrega = tipoEntrega;
     }
 
     public String getUsuarioRegistro() {

@@ -7,6 +7,7 @@ import com.umc.pediupatrao.entity.ItemPedido;
 import com.umc.pediupatrao.entity.Pedido;
 import com.umc.pediupatrao.entity.Produto;
 import com.umc.pediupatrao.entity.StatusPedido;
+import com.umc.pediupatrao.entity.TipoEntrega;
 import com.umc.pediupatrao.repository.ClienteRepository;
 import com.umc.pediupatrao.repository.PedidoRepository;
 import com.umc.pediupatrao.repository.ProdutoRepository;
@@ -54,10 +55,11 @@ public class PedidoService {
 
     @PreAuthorize("hasAnyRole('ATENDENTE', 'GERENTE')")
     public Pedido criar(String clienteId, List<String> produtoIds, List<Integer> quantidades,
-                        String formaPagamento, Double valorRecebido) {
+                        String formaPagamento, Double valorRecebido, String tipoEntrega) {
         Cliente cliente = clienteRepository.findById(clienteId)
                 .orElseThrow(() -> new IllegalArgumentException("Cliente informado não existe"));
         FormaPagamento forma = interpretarFormaPagamento(formaPagamento);
+        TipoEntrega entrega = interpretarTipoEntrega(tipoEntrega);
 
         List<ItemPedido> itens = montarItens(produtoIds, quantidades);
         if (itens.isEmpty()) {
@@ -71,6 +73,7 @@ public class PedidoService {
         pedido.setItens(itens);
         pedido.setPercentualDesconto(0.0);
         pedido.setStatus(StatusPedido.RECEBIDO);
+        pedido.setTipoEntrega(entrega);
         pedido.setFormaPagamento(forma);
         pedido.setValorRecebido(forma == FormaPagamento.DINHEIRO ? valorRecebidoInformado(valorRecebido) : 0.0);
         pedido.setUsuarioRegistro(SecurityUtils.usuarioAtual());
@@ -90,6 +93,7 @@ public class PedidoService {
         campos.add(new CampoAlterado("itens", null, String.valueOf(salvo.getItens().size())));
         campos.add(new CampoAlterado("valorTotal", null, formatar(salvo.getValorTotal())));
         campos.add(new CampoAlterado("formaPagamento", null, forma.name()));
+        campos.add(new CampoAlterado("tipoEntrega", null, entrega.name()));
         campos.add(new CampoAlterado("status", null, salvo.getStatus().name()));
         auditoriaService.registrar("INCLUSAO", ENTIDADE, salvo.getId(), campos);
 
@@ -105,13 +109,13 @@ public class PedidoService {
             throw new IllegalStateException("Pedido " + atual.getDescricao().toLowerCase()
                     + " não permite alteração de status");
         }
-        if (!atual.podeTransitarPara(destino)) {
+        if (!atual.podeTransitarPara(destino, pedido.getTipoEntrega())) {
             throw new IllegalStateException("Transição inválida: de " + atual.getDescricao()
                     + " para " + destino.getDescricao());
         }
 
         pedido.setStatus(destino);
-        if (destino == StatusPedido.SAIU_PARA_ENTREGA_RETIRADO) {
+        if (destino.despachado()) {
             pedido.setUsuarioSaida(SecurityUtils.usuarioAtual());
             pedido.setDataHoraSaida(LocalDateTime.now());
         }
@@ -132,7 +136,7 @@ public class PedidoService {
         if (percentual > LIMITE_DESCONTO) {
             throw new IllegalStateException("O desconto não pode ultrapassar 20%");
         }
-        if (!pedido.getStatus().anteriorASaida()) {
+        if (!pedido.getStatus().anteriorAoDespacho()) {
             throw new IllegalStateException("O desconto só pode ser aplicado antes da saída para entrega ou retirada");
         }
 
@@ -158,7 +162,7 @@ public class PedidoService {
         if (pedido.getStatus() == StatusPedido.CANCELADO) {
             throw new IllegalStateException("Pedido já cancelado");
         }
-        if (!pedido.getStatus().anteriorASaida()) {
+        if (!pedido.getStatus().anteriorAoDespacho()) {
             throw new IllegalStateException("Não é possível cancelar um pedido que já saiu para entrega ou retirada");
         }
         if (justificativa == null || justificativa.isBlank()) {
@@ -187,6 +191,17 @@ public class PedidoService {
             return FormaPagamento.valueOf(valor);
         } catch (IllegalArgumentException e) {
             throw new IllegalArgumentException("Forma de pagamento inválida");
+        }
+    }
+
+    private TipoEntrega interpretarTipoEntrega(String valor) {
+        if (valor == null || valor.isBlank()) {
+            throw new IllegalArgumentException("Selecione o tipo de entrega");
+        }
+        try {
+            return TipoEntrega.valueOf(valor);
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("Tipo de entrega inválido");
         }
     }
 
